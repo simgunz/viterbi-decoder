@@ -12,18 +12,24 @@ C = zeros(dim-1,1);
 C(1) = 1;
 D = diag(ones(1,dim-2),-1);
 
-% Y = @(u,s) xor(A*u, B*s);
-% S = @(u,s) xor(C*u, D*s);
-Y = @(u,s) mod(A*u + B*s,2);
-S = @(u,s) mod(C*u + D*s,2);
+Y = cell(2,2^nu);
+S = zeros(2,2^nu);
+N = cell(2^nu,1);
 
-N=cell(2^nu,1);
-for i=1:2^nu
-    for j=1:2
-        s = S(j-1,fliplr(de2bi(i-1,nu))');
-        N{bi2de(fliplr(s'))+1} = [N{bi2de(fliplr(s'))+1} [j-1; i-1]];
+for s=1:2^nu
+    for u=1:2
+        Y{u,s} = mod(A*(u-1) + B*toBin(s-1,nu),2);        
+        S(u,s) = toDec( mod(C*(u-1) + D*toBin(s-1,nu),2) ) + 1;
+        N{S(u,s)} = [N{S(u,s)} [u; s]];
     end
 end
+
 end
 
+function [ binS ] = toBin ( s , nu)
+    binS = fliplr(de2bi(s,nu))';
+end
 
+function [ decS ] = toDec ( s )
+    decS = bi2de(fliplr(s'));
+end

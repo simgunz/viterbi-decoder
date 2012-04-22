@@ -7,34 +7,39 @@ g1 = [1 0 1];
 g2 = [1 1 1];
 
 %u_input = [0 1 1 1 0 1 0 0 0];
-u_input = round(rand(1,1000));    % Input sequence
+u_input = round(rand(1,10000));    % Input sequence
 
 Psymbol = 0.08;     % Psymbol = Q(1/std_deviation_w)
                     % Percentage of erroneous transmitted BPAM symbols (symbols received with
                     % opposite sign)
 
-[Y,S,N] = buildMaps(g1,g2);     % Y(u,s) Output function, return the column vector [y1; y2]
-                                % associated to the input u and the state s
-                                % S(u,s) State update function, return the column vector
-                                % [s1; ... s_nu] associated to the input u and the state s
-                                % N Neighbors map, array of vectors, each associated to the state j.
-                                % Every vector contains all the qbors of j in the form [u; s]
-                                % The states go from 0 to (2^nu)-1
+[Y,S,N] = buildMaps(g1,g2);     % Y(u,s) Output map (cell), store the column vector [y1; y2]
+                                % in position (u,s) associated to the input u and the state s
+                                % S(u,s) State update map (matrix), store the state sNext
+                                % in position (u,s) associated to the input u and the state s
+                                % N(s) Neighbors map (cell), store the array of neighbors [u; s]
+                                % in position (s) associated to the state s
+                                % To match matlab index convention the range of stored 
+                                % state is 1-2^nu and the range of stored input is 1-2
+                                % The real range of input is 0-1 and the real range of state
+                                % is 0-(2^nu)-1
+                                
 
-mu = length(u_input);         % Input length
-nu = length(g1)-1;              % Number of memory elements
+mu = length(u_input);           % Input length
+nu = length(g1) - 1;            % Number of memory elements
 q = 2^nu;                       % Number of possible states
 
 u = [u_input zeros(1,nu)];         % Input extended with zero padding
+u = u + 1;                         % Translation to match matlab indexing
     
-s = zeros(nu,1);        % State (column) vector
+s = 1;                  % Initial state
 y = zeros(2,mu + nu);   % Output vector, each column is [y1; y2]
 
 
 %%%%%%% ENCODER %%%%%%%
 
 for k=1:(mu + nu)
-    y(:,k) = Y(u(k),s);
+    y(:,k) = Y{u(k),s};
     s = S(u(k),s);
 end
 
@@ -47,8 +52,7 @@ d = y(:)';
 %%% BPAM MODULATOR %%%%
 
 sTx = d;
-index = find(sTx-1);            % Find the elements equal to zero
-sTx(index) = sTx(index) - 1;    % Set them to -1
+sTx(sTx==0) = -1;    % Map 0 to -1
 
 
 %%%%%%% CHANNEL %%%%%%%
@@ -56,6 +60,7 @@ sTx(index) = sTx(index) - 1;    % Set them to -1
 std_deviation_w = 1/(qfuncinv(Psymbol));            % Noise standard deviation
 r = sTx + randn(1,length(sTx)) * std_deviation_w;   % Received signal
 symbolErr = sum(sign(sTx) ~= sign(r));              % Number of erroneous tx symbols
+
 
 %%%%%%%%% S/P %%%%%%%%%
 
@@ -68,17 +73,17 @@ gamma = ones(1,2^nu)*(-inf);    % Metrics column vector
 gamma(1) = 0;
 gammanew = gamma;               
 survivors = cell(2^nu,1);       % Survivors array of vectors
-
+survivorsNew = cell(2^nu,1);
 for i=1:(mu + nu)                   % For every output [y1; y2]
-    for j=1:2^nu                    % For every possible state, possible states go from 1 to 2^nu
-                                    % in this way they can be used as index to access vectors
+    for j=1:2^nu                    % For every possible state
+                                    
         maxgamma = -inf;        
         for k=1:length(N{j})            % For every neighbors of the current state j
             neighInput = N{j}(1,k);
-            neighState = N{j}(2,k) + 1;         % Convert state from range 0 - (2^nu)-1 to range 1-2^nu
-            neighStateBin = fliplr(de2bi(neighState - 1,nu))';  % Convert the state in binary form
-            
-            tempgamma = gamma(neighState) + sum(r(:,i)'*M(Y(neighInput,neighStateBin)));
+            neighState = N{j}(2,k);         
+            M = Y{neighInput,neighState};
+            M(M==0) = -1;            
+            tempgamma = gamma(neighState) + sum(r(:,i)'*M);
             if tempgamma > maxgamma
                 goodNeighState = neighState;
                 newSurv = N{j}(1,k);
@@ -92,7 +97,7 @@ for i=1:(mu + nu)                   % For every output [y1; y2]
     survivors = survivorsNew;
 end
 
-u_output = survivors{1}(1:mu);
+u_output = survivors{1}(1:mu) - 1;      % Translate from matlab index to real value
 
 residualErr = sum(u_input ~= u_output);
 
