@@ -6,7 +6,7 @@ clc;
 g1 = [1 0 1];
 g2 = [1 1 1];
 
-mu = 1000000;                     % Input length
+mu = 10000;                     % Input length
 nu = length(g1) - 1;            % Number of memory elements
 
 Psymbol = 0.08;     % Psymbol = Q(1/std_deviation_w)
@@ -15,7 +15,7 @@ Psymbol = 0.08;     % Psymbol = Q(1/std_deviation_w)
 
 mexEnabled = 1;     % Enable or disable c implementation of the encoder/decoder
 
-iter=30;
+iter=2000;
 % Y(u,s) Output map (cell), store the column vector [y1; y2]
 % in position (u,s) associated to the input u and the state s
 % S(u,s) State update map (matrix), store the state sNext

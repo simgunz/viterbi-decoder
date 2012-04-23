@@ -4,13 +4,13 @@
 
 void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 {
-    double *uIn,*S,*y,*valueY;
-    mxArray *Y,*N,*cellY;
-    int u,s,n,k;
+    double *u,*S,*y,*valueY;
+    mxArray *Y;
+    int s,n,k;
 
-    uIn = mxGetPr(prhs[0]);
-    S = mxGetPr(prhs[2]);
+    u = mxGetPr(prhs[0]);
     Y = mxDuplicateArray(prhs[1]);
+    S = mxGetPr(prhs[2]);    
     n = mxGetN(prhs[0]);
 
     plhs[0] = mxCreateDoubleMatrix(2,n, mxREAL);
@@ -18,14 +18,11 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
 
     s = 0;
     for(k=0;k<n;k++)
-    {
-        u = uIn[k];
-        cellY = mxGetCell(Y,u+(s<<1));
-        valueY = mxGetPr(cellY);
+    {        
+        valueY = mxGetPr(mxGetCell(Y,(int)u[k]+(s<<1)));         
         y[k<<1] = valueY[0];
         y[1+(k<<1)] = valueY[1];
-        s = (int)S[u+(s<<1)];
+        s = (int)S[(int)u[k]+(s<<1)];
     }
-
 }
 
