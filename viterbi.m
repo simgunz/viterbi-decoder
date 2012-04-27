@@ -6,38 +6,38 @@ clc;
 g1 = [1 0 1];
 g2 = [1 1 1];
 
-mu = 10000;                     % Input length
+mu = 1000;                      % Input length
 nu = length(g1) - 1;            % Number of memory elements
+ns = 2^nu;
 
-Psymbol = 0.08;     % Psymbol = Q(1/std_deviation_w)
+Psymbol = 0.008;     % Psymbol = Q(1/std_deviation_w)
                     % Percentage of erroneous transmitted BPAM symbols (symbols received with
                     % opposite sign)
 
-mexEnabled = 1;     % Enable or disable c implementation of the encoder/decoder
+mexEnabled = 0;     % Enable or disable c implementation of the encoder/decoder
 
-iter=2000;
-% Y(u,s) Output map (cell), store the column vector [y1; y2]
-% in position (u,s) associated to the input u and the state s
+iter=1;
+% Y(u,s,k) Output map, store the vector [y1, y2]
+% in position (u,s,:) associated to the input u and the state s
 % S(u,s) State update map (matrix), store the state sNext
 % in position (u,s) associated to the input u and the state s
-% N(s) Neighbors map (cell), store the array of neighbors [u; s]
-% in position (s) associated to the state s
+% N(s,k,i) Neighbors map, store the k-th neighbor [u, sN] associated to
+% the state s in position (s,k,:) 
 
-% It is possible to create the maps to match the array index system
-% of Matlab or C. For Matlab all the values of input and states are shifted by 1
+% For Matlab all the values of input and states are shifted by 1
 % To match matlab index convention the range of stored
 % state is 1-2^nu and the range of stored input is 1-2
 % To match C index convention the range of stored input is 0-1
 % and the range of stored state is 0-(2^nu)-1
 
-if mexEnabled
-    startIndex = 0;     % First array index is 0 (C)
-else
-    startIndex = 1;     % First array index is 1 (Matlab)
+[Y,S,N] = buildMaps(g1,g2);
+
+if ~mexEnabled       % Translate to MATLAB index system
+    S = S + 1;
+    N = N + 1;    
 end
 
 
-[Y,S,N] = buildMaps(g1,g2,startIndex);
 tic
 for i=1:iter
 
@@ -45,20 +45,23 @@ for i=1:iter
     u_input = round(rand(1,mu));       % Input sequence
 
     u = [u_input zeros(1,nu)];         % Input extended with zero padding
-    u = u + startIndex;                % Match the correct index system
-
+    
+    if ~mexEnabled
+        u = u + 1;                % Match the correct index system
+    end
+    
     %%%%%%% ENCODER %%%%%%%
 
     % Output vector, each column is [y1; y2]
 
-
-    s = startIndex;                  % Initial state
+    
     if mexEnabled
         y = vitencoder(u,Y,S);
     else
+        s = 1;                  % Initial state
         y = zeros(2,mu + nu);
         for k=1:(mu + nu)
-            y(:,k) = Y{u(k),s};
+            y(:,k) = Y(u(k),s,:);
             s = S(u(k),s);
         end
     end
@@ -89,41 +92,42 @@ for i=1:iter
 
     %%% VITERBI DECODER %%%
     %% ELIMINA RIDIMENSIONAMENTO ARRAY
-%     if mexEnabled
-%         u_output = vitdecoder(r,S,Y);
-%     else
-%         gamma = ones(1,2^nu)*(-inf);    % Metrics column vector
-%         gamma(1) = 0;
-%         gammanew = gamma;
-%         survivors = cell(2^nu,1);       % Survivors array of vectors
-%         survivorsNew = cell(2^nu,1);
-%         for i=1:(mu + nu)                   % For every output [y1; y2]
-%             for j=1:2^nu                    % For every possible state
-%
-%                 maxgamma = -inf;
-%                 for k=1:length(N{j})            % For every neighbors of the current state j
-%                     neighInput = N{j}(1,k);
-%                     neighState = N{j}(2,k);
-%                     M = Y{neighInput,neighState};
-%                     M(M==0) = -1;
-%                     tempgamma = gamma(neighState) + sum(r(:,i)'*M);
-%                     if tempgamma > maxgamma
-%                         goodNeighState = neighState;
-%                         newSurv = N{j}(1,k);
-%                         maxgamma = tempgamma;
-%                     end
-%                 end
-%                 survivorsNew{j} = [survivors{goodNeighState} newSurv];
-%                 gammanew(j) = maxgamma;
-%             end
-%             gamma = gammanew - max(gammanew);
-%             survivors = survivorsNew;
-%         end
-%
-%         u_output = survivors{1}(1:mu) - 1;      % Translate from matlab index to real value
-%     end
-%
-%     residualErr = sum(u_input ~= u_output);
+    if mexEnabled
+        u_output = vitdecoder(r,S,Y,N);
+    else
+        gamma = ones(1,ns)*(-inf);    % Metrics column vector
+        gamma(1) = 0;
+        gammanew = gamma;
+        survivors = zeros(2,mu+nu,ns);       % Survivors array of vectors        
+        % M = 
+        for i=1:(mu + nu)                   % For every output [y1; y2]
+            for j=1:ns                    % For every possible state                
+                    
+                M(:,1) = squeeze(Y(N(j,1,1),N(j,1,2),:));
+                M(:,2) = squeeze(Y(N(j,2,1),N(j,2,2),:));
+                M(M==0) = -1;
+                inc = r(:,i)'*M;
+                if inc(1) > inc(2) 
+                    bestK = 1;
+                else
+                    bestK = 2;
+                end
+                gammanew(j) = gamma(N(j,bestK,2)) + inc(bestK);
+                survivors(:,i,j) = squeeze(N(j,bestK,:));                
+                
+            end
+            gamma = gammanew - max(gammanew);            
+        end
+        u_output = zeros(1,mu+nu);
+        ss = 1;    
+        for k=fliplr(1:(nu+mu))        
+            u_output(k) = survivors(1,k,ss);
+            ss = survivors(2,k,ss);
+        end
+        u_output = u_output(1:mu) - 1;      % Eventually translate from matlab index to real value
+    end
+       
+    residualErr = sum(u_input ~= u_output);
 
 end
 toc
