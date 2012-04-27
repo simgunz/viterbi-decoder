@@ -6,17 +6,18 @@ clc;
 g1 = [1 0 1];
 g2 = [1 1 1];
 
-mu = 1000;                      % Input length
+mu = 200000;                      % Input length
 nu = length(g1) - 1;            % Number of memory elements
 ns = 2^nu;
 
-Psymbol = 0.008;     % Psymbol = Q(1/std_deviation_w)
+Psymbol = 0.05;     % Psymbol = Q(1/std_deviation_w)
                     % Percentage of erroneous transmitted BPAM symbols (symbols received with
                     % opposite sign)
 
-mexEnabled = 0;     % Enable or disable c implementation of the encoder/decoder
-
-iter=1;
+%mexEnabled = 0;     % Enable or disable c implementation of the encoder/decoder
+test = 1;
+test1 = 0;
+iter = 1000;
 % Y(u,s,k) Output map, store the vector [y1, y2]
 % in position (u,s,:) associated to the input u and the state s
 % S(u,s) State update map (matrix), store the state sNext
@@ -40,12 +41,19 @@ end
 
 tic
 for i=1:iter
-
-    %u_input = [0 1 1 1 0 1 0 0 0];
+    
     u_input = round(rand(1,mu));       % Input sequence
 
+    if test
+        u_input = uTest;        
+    end
+    if test1
+        u_input = [0 1 1 1 0 1 0 0 0];
+        mu = 9;
+    end
     u = [u_input zeros(1,nu)];         % Input extended with zero padding
     
+
     if ~mexEnabled
         u = u + 1;                % Match the correct index system
     end
@@ -82,6 +90,10 @@ for i=1:iter
 
     std_deviation_w = 1/(qfuncinv(Psymbol));            % Noise standard deviation
     r = sTx + randn(1,length(sTx)) * std_deviation_w;   % Received signal
+    
+     if test
+        r = rTest;
+     end
     symbolErr = sum(sign(sTx) ~= sign(r));              % Number of erroneous tx symbols
 
 
@@ -93,7 +105,7 @@ for i=1:iter
     %%% VITERBI DECODER %%%
     %% ELIMINA RIDIMENSIONAMENTO ARRAY
     if mexEnabled
-        u_output = vitdecoder(r,S,Y,N);
+        u_output = vitdecoder(r,Y,S,N);
     else
         gamma = ones(1,ns)*(-inf);    % Metrics column vector
         gamma(1) = 0;
@@ -106,13 +118,13 @@ for i=1:iter
                 M(:,1) = squeeze(Y(N(j,1,1),N(j,1,2),:));
                 M(:,2) = squeeze(Y(N(j,2,1),N(j,2,2),:));
                 M(M==0) = -1;
-                inc = r(:,i)'*M;
-                if inc(1) > inc(2) 
+                tempgamma = r(:,i)'*M + gamma(N(j,1,2):N(j,2,2));
+                if tempgamma(1) > tempgamma(2) 
                     bestK = 1;
                 else
                     bestK = 2;
                 end
-                gammanew(j) = gamma(N(j,bestK,2)) + inc(bestK);
+                gammanew(j) = tempgamma(bestK);
                 survivors(:,i,j) = squeeze(N(j,bestK,:));                
                 
             end
