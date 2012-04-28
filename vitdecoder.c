@@ -8,39 +8,32 @@
 void decoder(double *r,double*Y,double*S,double*N,int n,int Ysize,int ns,double *u_out)
 {
     int i,j,k,z;
-    int bb;
-    double tblen,inf;
-    double gamma[ns][2];
+    int bb,u1,u2,s1,s2;
+    double tblen;
+    double gamma[ns][2],tempgamma[2],maxgamma[2] = {0,0};
     int survivors[ns][n][2];
     
-    tblen = 5*log2(ns);
-    inf = -1000;
+    tblen = 5*log2(ns);    
                     
     for(z=0;z<ns;z++)
     {
-        gamma[z][0] = inf;
-        gamma[z][1] = inf;
+        gamma[z][1] = gamma[z][0] = -10000;
     }
         
     gamma[0][0] = 0;
- 
-    /*mxCalloc*/
                     
     for(i=0;i<n;i++)
-    {
-        int maxgamma[2] = {0,0};
+    {                
         for(j=0;j<ns;j++)
         {                                          
-            int u1 = (int)N[j];
-            int s1 = (int)N[j+Ysize];
+            u1 = (int)N[j];
+            s1 = (int)N[j+Ysize];
 
-            int u2 = (int)N[j+ns];
-            int s2 = (int)N[j+ns+Ysize];
-
-            double tempgamma[2];
-            tempgamma[0] = gamma[(int)N[j+Ysize]][i%2];
-            tempgamma[1] = gamma[(int)N[j+ns+Ysize]][i%2];
-
+            u2 = (int)N[j+ns];
+            s2 = (int)N[j+ns+Ysize];
+            
+            tempgamma[0] = gamma[s1][i%2];
+            tempgamma[1] = gamma[s2][i%2];
 
             for(z=0;z<2;z++)
             {                    
@@ -55,21 +48,21 @@ void decoder(double *r,double*Y,double*S,double*N,int n,int Ysize,int ns,double 
             survivors[j][i][1] = (int)N[j+ns*bb+Ysize];
             
             if(gamma[j][(i+1)%2] > maxgamma[i%2])
+            {
                 maxgamma[(i+1)%2] = gamma[j][(i+1)%2];
+            }
         }        
     }
 
     int s = 0;
-    int u[n];
-    for(z=n-1;z>=0;z--)
+    for(z=n-1;z>=n-log2(ns);z--)
     {
-        u[z] = survivors[s][z][0];
         s = survivors[s][z][1];
-        /*mexPrintf("%d",survivors[s][z][1]);*/
     }
-    for(z=0;z<n-log2(ns);z++)
+    for(z=n-log2(ns)-1;z>=0;z--)
     {
-        u_out[z] = u[z];
+        u_out[z] = survivors[s][z][0];
+        s = survivors[s][z][1];
     }
 }
 
