@@ -2,18 +2,14 @@
 #include "matrix.h"
 #include "math.h"
 
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define M(a) ((a) == (0) ? (a-1) : (a))
 
 void decoder(double *r,double*Y,double*S,double*N,int n,int Ysize,int ns,double *u_out)
 {
     int i,j,k,z;
     int bb,u1,u2,s1,s2;
-    double tblen;
     double gamma[ns][2],tempgamma[2],maxgamma[2] = {0,0};
     int survivors[ns][n][2];
-    
-    tblen = 5*log2(ns);    
                     
     for(z=0;z<ns;z++)
     {

@@ -3,14 +3,13 @@
 
 void encoder(double *u,double*Y,double*S,int n,int Ysize,double *y)
 {
-    int k,uidx,s = 0;
+    int k,s = 0;
     
     for(k=0;k<n;k++)
     {        
-        uidx=u[k];
-        y[k<<1] = Y[uidx+(s<<1)];
-        y[1+(k<<1)] = Y[uidx+(s<<1)+Ysize];
-        s = (int)S[uidx+(s<<1)];
+        y[k<<1] = Y[(int)u[k]+(s<<1)];
+        y[1+(k<<1)] = Y[(int)u[k]+(s<<1)+Ysize];
+        s = (int)S[(int)u[k]+(s<<1)];
     }
 }
 
