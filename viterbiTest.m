@@ -4,8 +4,14 @@ close all;
 
 %%% TUNABLE PARAMETERS %%%
 
-g1 = [1 0 1];
-g2 = [1 1 1];
+% Since the mex functions keep the full survivors table, matlab crash if
+% higher generators are used with high input length, because it runs out of memory
+% If the input length is too short for high SNR the avarege BER is zero so the 
+% graph is truncated.
+% Generators [23,35] with mu = 50000 still works with 4GB RAM
+
+g1 = 5;   % Generators in octal notation
+g2 = 7;
 
 mu = 100000;        % Input length
 
@@ -14,7 +20,7 @@ iter = 10;          % Number of simulations
 
 %%%%%% SIMULATION %%%%%%%%
 
-tr = poly2trellis(length(g1),[bi2de(g1),bi2de(g2)]);
+tr = poly2trellis(length(de2bi(oct2dec(g1))),[g1,g2]);
 spec = distspec(tr);
 
 RVit = 1/2;     % Code rate of the convolutiona code
@@ -63,10 +69,10 @@ PbitVitTh = qfunc(sqrt(spec.dfree*gammaVit));
 h = figure;
 semilogy(EbN0dB,PbitUncTh,'m');
 hold;
-line([0,10],[1e-5,1e-5],'Color','r');
 semilogy(EbN0dB,PbitUnc,'g');
 semilogy(EbN0dB(1:index),PbitVitTh,'c');
 semilogy(EbN0dB(1:index),PbitVit);
+line([0,10],[1e-5,1e-5],'Color','r');
 
 legend('Uncoded Thoretical BER','Uncoded Simulated BER','CC Thoretical BER','CC Simulated BER');
 xlabel('Eb/N0 [dB]');

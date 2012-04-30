@@ -2,6 +2,10 @@ function [ u_output ] = convolutionalTxSystem( u_input, g1, g2, enableMex, gamma
 %CONVOLUTIONALTXSYSTEM Summary of this function goes here
 %   Detailed explanation goes here
 
+dim = length(de2bi(oct2dec(max(g1,g2))));
+g1 = fliplr(de2bi(oct2dec(g1),dim));
+g2 = fliplr(de2bi(oct2dec(g2),dim));
+
 mu = length(u_input);
 nu = length(g1) - 1;             % Number of memory elements
 ns = 2^nu;                       % Number of possible states
