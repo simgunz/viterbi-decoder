@@ -33,7 +33,7 @@ gammaVit = 2*RVit*EbN0;
 gammaUnc = 2*RUnc*EbN0;
 
 [a,index]=min(abs(qfunc(sqrt(spec.dfree*gammaVit))-5e-6)); % Find the index of the gamma 
-                                                           % corresponding to Pbit=1e-5
+                                                           % corresponding to Pbit=5e-6
 gammaVit = gammaVit(1:index);
 
 gammaVitDB = 10*log10(gammaVit);
