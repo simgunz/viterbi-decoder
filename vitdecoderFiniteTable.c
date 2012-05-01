@@ -7,9 +7,12 @@
 void decoder(double *r,double*Y,double*S,double*N,int n,int Ysize,int ns,double *u_out)
 {
     int i,j,k,z;
-    int bb,u1,u2,s1,s2;
+    int bb,u1,u2,s1,s2,s,bestJ,tblen;
     double gamma[ns][2],tempgamma[2],maxgamma[2] = {0,0};
-    int survivors[ns][n][2];
+
+    tblen = 5*log2(ns);
+    
+    int survivors[ns][tblen][2];
 
     for(z=0;z<ns;z++)
     {
@@ -40,25 +43,36 @@ void decoder(double *r,double*Y,double*S,double*N,int n,int Ysize,int ns,double 
             bb = (tempgamma[0] > tempgamma[1]) ? 0 : 1;
 
             gamma[j][(i+1)%2] = tempgamma[bb] - maxgamma[i%2];
-            survivors[j][i][0] = (int)N[j+ns*bb];
-            survivors[j][i][1] = (int)N[j+ns*bb+Ysize];
+            survivors[j][i%tblen][0] = (int)N[j+ns*bb];
+            survivors[j][i%tblen][1] = (int)N[j+ns*bb+Ysize];
 
             if(gamma[j][(i+1)%2] > maxgamma[i%2])
             {
                 maxgamma[(i+1)%2] = gamma[j][(i+1)%2];
+                bestJ = j;
             }
+        }
+        if(i>=tblen-1)
+        {
+            s = bestJ;
+            for(z=0;z<tblen-1;z++)          /* Performance bottleneck*/
+            {
+                s = survivors[s][(i-z)%tblen][1];
+            }
+            u_out[i-tblen+1] = survivors[s][(i+1)%tblen][0];
         }
     }
 
-    int s = 0;
-    for(z=n-1;z>=n-log2(ns);z--)
+    s = 0;
+    i--;
+    for(z=0;z<log2(ns);z++)
     {
-        s = survivors[s][z][1];
+        s = survivors[s][(i-z)%tblen][1];
     }
-    for(z=n-log2(ns)-1;z>=0;z--)
+    for(z=log2(ns);z<tblen;z++)
     {
-        u_out[z] = survivors[s][z][0];
-        s = survivors[s][z][1];
+        u_out[i-z] = survivors[s][(i-z)%tblen][0];
+        s = survivors[s][(i-z)%tblen][1];
     }
 }
 

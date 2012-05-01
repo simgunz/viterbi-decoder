@@ -1,22 +1,21 @@
 function [ u_output ] = uncodedTxSystem( u, gammaDB )
-%CONVOLUTIONALTXSYSTEM Summary of this function goes here
-%   Detailed explanation goes here
+%CONVOLUTIONALTXSYSTEM Simulates a full transmission system with uncoded input
 
 %%% BPAM MODULATOR %%%%
 
 sTx = u;
-sTx(sTx==0) = -1;    % Map 0 to -1
+sTx(sTx==0) = -1;    % Map 0 to -1 and produce the transmitted signal
 
 
 %%%%%%% CHANNEL %%%%%%%
 
-r = awgn(sTx,gammaDB);              % Received signal
+r = awgn(sTx,gammaDB);      % Received signal
 
 
-%%%%%%% DECODER %%%%%%%
+%%%%% DEMODULTOR %%%%%%
 
-u_output = sign(r);
-u_output(u_output==-1) = 0;
+u_output = sign(r);             % Decision
+u_output(u_output==-1) = 0;     % Invese mapping
     
 end
 
