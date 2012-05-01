@@ -1,0 +1,9 @@
+The folder is a git repo
+
+If some library are missing, link the correct library
+
+    ln -s /usr/lib/libstdc++.so.6.0.XX MATLABFOLDER/sys/os/glnxa64/libstdc++.so.6
+
+Compile the c files with
+
+    mex FILE.c
