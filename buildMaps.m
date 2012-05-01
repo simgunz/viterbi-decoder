@@ -5,13 +5,13 @@ function [ Y, S, N] = buildMaps( g1, g2 )
 % S(u,s) State update map (matrix), store the state sNext
 % in position (u,s) associated to the input u and the state s
 % N(s,k,i) Neighbors map, store the k-th neighbor [u, sN] associated to
-% the state s in position (s,k,:) 
+% the state s in position (s,k,:)
 
 % To match matlab index convention the range of stored
 % state is 1-2^nu and the range of stored input is 1-2
 % To match C index convention the range of stored input is 0-1
 % and the range of stored state is 0-(2^nu)-1
-% The maps are produced in C format. To match matlab index system it is 
+% The maps are produced in C format. To match matlab index system it is
 % necessary to add one to every elements of S,N matrix
 
 dim = length(g1);
@@ -24,7 +24,7 @@ C = zeros(nu,1);
 C(1) = 1;
 D = diag(ones(1,nu-1),-1);
 
-Y = zeros(2,ns,2);          
+Y = zeros(2,ns,2);
 S = zeros(2,ns);
 N = zeros(ns,2,2);
 

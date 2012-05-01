@@ -16,6 +16,6 @@ r = awgn(sTx,gammaDB);      % Received signal
 
 u_output = sign(r);             % Decision
 u_output(u_output==-1) = 0;     % Invese mapping
-    
+
 end
 

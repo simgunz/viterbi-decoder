@@ -11,7 +11,7 @@ void decoder(double *r,double*Y,double*S,double*N,int n,int Ysize,int ns,double 
     double gamma[ns][2],tempgamma[2],maxgamma[2] = {0,0};
 
     tblen = 5*log2(ns);
-    
+
     int survivors[ns][tblen][2];
 
     for(z=0;z<ns;z++)
